@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/* Light theme only. The app ignores the device's dark-mode setting so every
+   user sees the same bright, high-contrast screen. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --background: #f3f6f5;
+  --foreground: #14201d;
+  --surface: #ffffff;
+  --border: #cdd8d4;
+  --muted: #55655f;
+  --accent: #0f766e;
+  --accent-fg: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-line: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgb(20 32 29 / 0.06);
+  }
+  .text-muted {
+    color: var(--muted);
+  }
+  .field {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .field:focus-visible,
+  .btn-primary:focus-visible,
+  .btn-ghost:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  /* Loading states ------------------------------------------------------ */
+  .skeleton {
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--muted) 22%, transparent);
+  }
+  .spinner {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 9999px;
+    border: 2px solid color-mix(in srgb, var(--muted) 35%, transparent);
+    border-top-color: var(--accent);
+  }
+  .page-enter {
+    animation: page-enter 220ms ease-out both;
+  }
+}
+
+@keyframes pulse-soft {
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Motion only for people who have not asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    animation: pulse-soft 1.6s ease-in-out infinite;
+  }
+  .spinner {
+    animation: spin 0.8s linear infinite;
+  }
+}
