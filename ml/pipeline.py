@@ -12,6 +12,7 @@ Models compared (one-month-ahead forecast of "elevated" status, expanding-window
 """
 import argparse
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -186,6 +187,11 @@ def build_alerts(per_disease: list[dict]) -> list[dict]:
 
 
 def load_inputs(force_csv: bool):
+    if os.getenv("GITHUB_ACTIONS") and not db.configured():
+        raise SystemExit(
+            "Supabase secrets are missing. In GitHub go to Settings -> Secrets and variables -> Actions and add "
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+        )
     if db.configured() and not force_csv:
         cases, weather = db.fetch("monthly_cases"), db.fetch("monthly_weather")
         src = "supabase"

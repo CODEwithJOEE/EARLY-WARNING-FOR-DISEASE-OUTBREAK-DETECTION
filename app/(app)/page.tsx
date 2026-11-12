@@ -20,8 +20,18 @@ export default async function DashboardPage() {
   const [casesRes, weatherRes, predRes, alertRes] = await Promise.all([
     supabase.from("monthly_cases").select("*").order("year").order("month"),
     supabase.from("monthly_weather").select("*").order("year").order("month"),
-    supabase.from("predictions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(30),
-    supabase.from("alerts").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(10),
+    supabase
+      .from("predictions")
+      .select("*")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false })
+      .limit(30),
+    supabase
+      .from("alerts")
+      .select("*")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   const cases = (casesRes.data ?? []) as CaseRow[];
@@ -45,7 +55,11 @@ export default async function DashboardPage() {
       <div className="card p-6">
         <h1 className="text-lg font-semibold">No data yet</h1>
         <p className="mt-1 text-sm text-muted">
-          Add monthly cases on the <Link className="underline" href="/cases">Monthly cases</Link> page, or load the demo data with{" "}
+          Add monthly cases on the{" "}
+          <Link className="underline" href="/cases">
+            Monthly cases
+          </Link>{" "}
+          page, or load the demo data with{" "}
           <code>python ml/seed_supabase.py</code>.
         </p>
       </div>
@@ -57,14 +71,19 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <p className="text-sm text-muted">
-          {cases.length} months of data, latest {last ? monthLabel(last.year, last.month) : "—"}.
-          {allPreds.length === 0 && " No forecast yet: run the Python pipeline."}
+          {cases.length} months of data, latest{" "}
+          {last ? monthLabel(last.year, last.month) : "—"}.
+          {allPreds.length === 0 &&
+            " No forecast yet: run the Python pipeline."}
         </p>
       </div>
 
       <section aria-labelledby="risk-h" className="space-y-3">
         <h2 id="risk-h" className="text-lg font-semibold">
-          Forecast risk{latest.cough ? ` for ${monthLabel(latest.cough.year, latest.cough.month)}` : ""}
+          Forecast risk
+          {latest.cough
+            ? ` for ${monthLabel(latest.cough.year, latest.cough.month)}`
+            : ""}
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
           {DISEASES.map((d) => {
@@ -73,11 +92,17 @@ export default async function DashboardPage() {
               <article key={d} className="card p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{DISEASE_LABEL[d]}</h3>
-                  {p ? <RiskBadge level={p.risk_level} /> : <span className="text-xs text-muted">No forecast</span>}
+                  {p ? (
+                    <RiskBadge level={p.risk_level} />
+                  ) : (
+                    <span className="text-xs text-muted">No forecast</span>
+                  )}
                 </div>
                 {p && (
                   <>
-                    <p className="mt-3 text-3xl font-semibold tabular-nums">{Math.round(Number(p.risk_score) * 100)}%</p>
+                    <p className="mt-3 text-3xl font-semibold tabular-nums">
+                      {Math.round(Number(p.risk_score) * 100)}%
+                    </p>
                     <p className="text-xs text-muted">Model risk score</p>
                     {p.top_factors && p.top_factors.length > 0 && (
                       <div className="mt-3">
@@ -102,7 +127,11 @@ export default async function DashboardPage() {
           Open alerts
         </h2>
         {alerts.length === 0 ? (
-          <p className="card p-4 text-sm text-muted">No open alerts.</p>
+          <p className="card p-4 text-sm text-muted">
+            {DISEASES.every((d) => latest[d]?.risk_level === "low")
+              ? `No alerts. All three diseases are at low risk for ${monthLabel(latest.cough!.year, latest.cough!.month)}.`
+              : "No open alerts."}
+          </p>
         ) : (
           <div className="space-y-3">
             {alerts.map((a) => (
@@ -115,13 +144,17 @@ export default async function DashboardPage() {
                 </div>
                 {a.message && <p className="mt-1 text-sm">{a.message}</p>}
                 <details className="mt-2 text-sm">
-                  <summary className="cursor-pointer font-medium">Suggested actions</summary>
+                  <summary className="cursor-pointer font-medium">
+                    Suggested actions
+                  </summary>
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
                     {RECOMMENDATIONS[a.disease].map((r) => (
                       <li key={r}>{r}</li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-xs text-muted">Suggestions only. The RHU decides what action to take.</p>
+                  <p className="mt-2 text-xs text-muted">
+                    Suggestions only. The RHU decides what action to take.
+                  </p>
                 </details>
               </article>
             ))}

@@ -41,6 +41,18 @@ def fetch_monthly(start: str, end: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    import os
+
+    import db
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    if os.getenv("GITHUB_ACTIONS") and not db.configured():
+        raise SystemExit(
+            "Supabase secrets are missing. In GitHub go to Settings -> Secrets and variables -> Actions and add "
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+        )
+
     start, end = sys.argv[1], sys.argv[2]
     df = fetch_monthly(start, end)
     path = Path(__file__).parent / "data" / "monthly_weather.csv"
@@ -48,10 +60,6 @@ if __name__ == "__main__":
     df.to_csv(path, index=False)
     print(f"Wrote {len(df)} months to {path}")
 
-    import db
-    from dotenv import load_dotenv
-
-    load_dotenv()
     if db.configured():
         db.upsert("monthly_weather", df.assign(source="open-meteo").to_dict("records"), on_conflict="year,month")
         print("Upserted to Supabase.")
