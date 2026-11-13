@@ -1,5 +1,7 @@
 import Link from "next/link";
+import DataBehindBanner from "@/components/DataBehindBanner";
 import DiseaseCharts from "@/components/DiseaseCharts";
+import { firstMissingMonth } from "@/lib/period";
 import PipelineCard from "@/components/PipelineCard";
 import RiskBadge from "@/components/RiskBadge";
 import { getSessionProfile } from "@/lib/auth";
@@ -51,6 +53,7 @@ export default async function DashboardPage() {
   }
 
   const last = cases[cases.length - 1];
+  const behind = last ? firstMissingMonth(last) : null;
 
   if (!cases.length) {
     return (
@@ -80,6 +83,8 @@ export default async function DashboardPage() {
           {allPreds.length === 0 && " No forecast yet: run the prediction."}
         </p>
       </div>
+
+      {behind && <DataBehindBanner latest={last} missing={behind} />}
 
       <PipelineCard isAdmin={isAdmin} />
 

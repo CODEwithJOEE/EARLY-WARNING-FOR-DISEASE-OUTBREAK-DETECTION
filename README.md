@@ -58,9 +58,24 @@ Refresh the dashboard to see it.
 
 ## Monthly update (automatic)
 
-`.github/workflows/run-pipeline.yml` runs the pipeline on the 1st of every month and can be started by hand
-from the GitHub Actions tab. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` under
-Settings → Secrets and variables → Actions.
+Monthly routine:
+
+1. **Days 1–5:** the RHU enters last month's totals (Monthly cases page or CSV import).
+2. **Days 7–14:** `.github/workflows/run-pipeline.yml` runs automatically every day at 9:00 AM Philippine time.
+   Running several days in a row is safe: results for the same month are replaced, and alerts that were already
+   acknowledged or resolved keep their status. If the data was entered late, the next daily run picks it up.
+3. **Any time:** an admin can press **Run prediction** on the dashboard (or start the workflow from the Actions tab).
+   Before the 5th, the weather source may not yet have the last days of last month, so run again after the 5th
+   for a final result.
+
+Safeguards:
+
+- The dashboard shows a **Data is behind** banner when the latest month entered is older than the previous calendar month.
+- The pipeline stops with `Missing month: YYYY-MM. Add it before running.` if the case series skips a month
+  (a gap would silently misalign the lag features).
+- `weather.py` prints a warning when a month has weather for fewer days than it has.
+
+Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` under Settings → Secrets and variables → Actions.
 
 ## "Run prediction" button (admin only)
 

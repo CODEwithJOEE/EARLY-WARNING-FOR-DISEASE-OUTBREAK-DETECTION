@@ -1,9 +1,12 @@
 name: Run prediction pipeline
 
-# Runs on the 1st of each month and can be started by hand from the Actions tab.
+# Runs every day from the 7th to the 14th of each month at 9:00 AM Philippine time (01:00 UTC).
+# The RHU enters last month's cases by the 5th; running on several days catches late entries.
+# Re-running is safe: results for the same month are simply replaced.
+# It can also be started by hand (Actions tab, or the Run prediction button on the dashboard).
 on:
   schedule:
-    - cron: "0 1 1 * *"
+    - cron: "0 1 7-14 * *"
   workflow_dispatch:
 
 jobs:

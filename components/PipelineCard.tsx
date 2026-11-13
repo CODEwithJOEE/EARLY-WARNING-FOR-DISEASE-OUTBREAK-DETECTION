@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { runPipeline } from "@/app/(app)/run/actions";
+import { manilaNow } from "@/lib/period";
 import { Spinner } from "./Skeleton";
 
 type Run = {
@@ -60,6 +61,9 @@ export default function PipelineCard({ isAdmin }: { isAdmin: boolean }) {
       cancelled = true;
     };
   }, []);
+
+  // Before the 5th the weather source may still lack the last days of last month.
+  const [early] = useState(() => manilaNow().day < 5);
 
   const run = status?.run ?? null;
   const runIsNew =
@@ -164,6 +168,12 @@ export default function PipelineCard({ isAdmin }: { isAdmin: boolean }) {
         <p role="status" aria-live="polite" className="mt-0.5 text-sm">
           {line}
         </p>
+        {early && (
+          <p className="mt-1 text-xs text-muted">
+            Weather for the last days of last month may be incomplete. Run again
+            after the 5th for a final result.
+          </p>
+        )}
         {error && (
           <p role="alert" className="mt-1 text-sm text-red-700">
             {error}
