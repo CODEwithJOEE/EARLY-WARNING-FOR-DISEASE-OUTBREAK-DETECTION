@@ -11,7 +11,9 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-LAT, LON = 8.5167, 123.2833  # Katipunan, Zamboanga del Norte (approx.)
+# Katipunan town center, Zamboanga del Norte (PhilAtlas: 8.5128 N, 123.2847 E).
+# Checked on a map: the point is on land in the poblacion, not offshore.
+LAT, LON = 8.5128, 123.2847
 URL = "https://archive-api.open-meteo.com/v1/archive"
 
 
