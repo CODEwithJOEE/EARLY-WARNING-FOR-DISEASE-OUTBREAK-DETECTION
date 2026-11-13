@@ -62,6 +62,22 @@ Refresh the dashboard to see it.
 from the GitHub Actions tab. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` under
 Settings → Secrets and variables → Actions.
 
+## "Run prediction" button (admin only)
+
+The dashboard has a **Run prediction** button that starts the same GitHub workflow, so nobody has to open GitHub.
+It shows the last run time and whether it succeeded, and refreshes the dashboard when a run finishes.
+
+Set these in Vercel (Settings -> Environment Variables), then redeploy:
+
+| Name                | Value                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| `GH_DISPATCH_TOKEN` | Fine-grained GitHub token: this repository only, permission **Actions: Read and write** |
+| `GITHUB_REPO`       | `owner/repository-name`                                                                 |
+| `GITHUB_BRANCH`     | optional, defaults to `master`                                                          |
+
+Notes: the token expires (pick a date and note who renews it). Without these variables the button is disabled
+and the rest of the app works as before. Only users with the `admin` role can start a run; this is checked on the server.
+
 ## Deploying the website
 
 Deploy to Vercel (import the repository, add the two `NEXT_PUBLIC_` variables). Vercel ignores `ml/`.

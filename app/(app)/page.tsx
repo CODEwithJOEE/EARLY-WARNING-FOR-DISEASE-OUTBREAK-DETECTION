@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DiseaseCharts from "@/components/DiseaseCharts";
+import PipelineCard from "@/components/PipelineCard";
 import RiskBadge from "@/components/RiskBadge";
 import { getSessionProfile } from "@/lib/auth";
 import { RECOMMENDATIONS } from "@/lib/recommendations";
@@ -15,7 +16,8 @@ import {
 } from "@/lib/types";
 
 export default async function DashboardPage() {
-  const { supabase } = await getSessionProfile();
+  const { supabase, role } = await getSessionProfile();
+  const isAdmin = role === "admin";
 
   const [casesRes, weatherRes, predRes, alertRes] = await Promise.all([
     supabase.from("monthly_cases").select("*").order("year").order("month"),
@@ -52,16 +54,18 @@ export default async function DashboardPage() {
 
   if (!cases.length) {
     return (
-      <div className="card p-6">
-        <h1 className="text-lg font-semibold">No data yet</h1>
-        <p className="mt-1 text-sm text-muted">
-          Add monthly cases on the{" "}
-          <Link className="underline" href="/cases">
-            Monthly cases
-          </Link>{" "}
-          page, or load the demo data with{" "}
-          <code>python ml/seed_supabase.py</code>.
-        </p>
+      <div className="space-y-6">
+        <div className="card p-6">
+          <h1 className="text-lg font-semibold">No data yet</h1>
+          <p className="mt-1 text-sm text-muted">
+            Add monthly cases on the{" "}
+            <Link className="underline" href="/cases">
+              Monthly cases
+            </Link>{" "}
+            page, then run the prediction.
+          </p>
+        </div>
+        <PipelineCard isAdmin={isAdmin} />
       </div>
     );
   }
@@ -73,10 +77,11 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted">
           {cases.length} months of data, latest{" "}
           {last ? monthLabel(last.year, last.month) : "—"}.
-          {allPreds.length === 0 &&
-            " No forecast yet: run the Python pipeline."}
+          {allPreds.length === 0 && " No forecast yet: run the prediction."}
         </p>
       </div>
+
+      <PipelineCard isAdmin={isAdmin} />
 
       <section aria-labelledby="risk-h" className="space-y-3">
         <h2 id="risk-h" className="text-lg font-semibold">
