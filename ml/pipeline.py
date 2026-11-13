@@ -195,6 +195,12 @@ def load_inputs(force_csv: bool):
     if db.configured() and not force_csv:
         cases, weather = db.fetch("monthly_cases"), db.fetch("monthly_weather")
         src = "supabase"
+        if cases.empty:
+            raise SystemExit(
+                "No monthly cases found. Add the monthly cases first (Monthly cases page or CSV import), then run again."
+            )
+        if weather.empty:
+            raise SystemExit("No weather data found. Run weather.py first (the workflow does this automatically).")
     else:
         cases = pd.read_csv(ROOT / "data" / "monthly_cases.csv")
         weather = pd.read_csv(ROOT / "data" / "monthly_weather.csv")
