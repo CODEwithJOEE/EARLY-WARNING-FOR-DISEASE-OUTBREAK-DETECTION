@@ -24,12 +24,16 @@ Next.js website  ──writes cases──▶  Supabase (Postgres + Auth)  ◀─
 3. **Website keys.** Copy `.env.example` to `.env.local` and fill in the project URL and anon/publishable key.
 4. **Python keys.** Copy `ml/.env.example` to `ml/.env` and fill in the URL and the **service role** key.
    Never put the service role key in `.env.local`, in the frontend, or in Git.
-5. Install and run the website:
+5. **Supabase Auth settings.** Authentication → Sign In / Providers → turn **off** "Allow new users to sign up"
+   (the admin creates every account). Authentication → URL Configuration → set **Site URL** to the live website address.
+6. **GitHub Secrets.** In the repository: Settings → Secrets and variables → Actions → **Repository secrets** → add
+   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The workflow needs them to read and write the database.
+7. Install and run the website:
    ```bash
    npm install
    npm run dev          # http://localhost:3000
    ```
-6. Install the Python side:
+8. Install the Python side:
    ```bash
    cd ml
    python -m venv .venv
@@ -50,11 +54,19 @@ Refresh the dashboard to see it.
 
 ## With real data
 
-1. Enter the RHU's monthly counts in the app (Monthly cases page) or import a CSV with the columns
-   `year,month,cough,fever,diarrhea`.
-2. Fetch weather for the same months (needs internet): `python weather.py 2025-01-01 2026-10-31`
-   (uses Open-Meteo; check the coordinates in `weather.py` against a map).
-3. Run `python pipeline.py`.
+1. **Remove all demo and test data first.** In Supabase SQL Editor run:
+   ```sql
+   delete from alerts; delete from predictions; delete from model_metrics;
+   delete from monthly_cases; delete from monthly_weather;
+   ```
+   This also removes any test weather rows (source `test` or `synthetic-demo`).
+2. Enter the RHU's monthly counts in the app (Monthly cases page) or import a CSV with the columns
+   `year,month,cough,fever,diarrhea`. Every month must be present, with no gaps.
+3. Fetch weather for the same months (needs internet): `python weather.py 2025-01-01 2026-10-31`
+   (the workflow also does this automatically). The weather comes from Open-Meteo, which is **gridded reanalysis data,
+   not a weather station**. Coordinates are in `weather.py` (Katipunan town center, 8.5128 N, 123.2847 E);
+   check them against a map, and compare the monthly rainfall with any local records the RHU or the LGU has.
+4. Run `python pipeline.py`, or press **Run prediction** on the dashboard.
 
 ## Monthly update (automatic)
 
@@ -90,12 +102,25 @@ Set these in Vercel (Settings -> Environment Variables), then redeploy:
 | `GITHUB_REPO`       | `owner/repository-name`                                                                 |
 | `GITHUB_BRANCH`     | optional, defaults to `master`                                                          |
 
-Notes: the token expires (pick a date and note who renews it). Without these variables the button is disabled
+Notes: the token expires (the current one expires around **Feb 11, 2027**). Before then, create a new token on GitHub,
+replace `GH_DISPATCH_TOKEN` in Vercel and redeploy. If it expires, the button stops working but the automatic monthly
+run and the rest of the app keep working. Without these variables the button is disabled
 and the rest of the app works as before. Only users with the `admin` role can start a run; this is checked on the server.
 
 ## Deploying the website
 
-Deploy to Vercel (import the repository, add the two `NEXT_PUBLIC_` variables). Vercel ignores `ml/`.
+Deploy to Vercel (import the repository, Application Preset **Next.js**). Vercel ignores `ml/`.
+
+Environment variables (Project → Settings → Environment Variables):
+
+| Name                                                      | Needed for                                  |
+| --------------------------------------------------------- | ------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                                | website (required)                          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon or publishable key) | website (required)                          |
+| `GH_DISPATCH_TOKEN`, `GITHUB_REPO`, `GITHUB_BRANCH`       | Run prediction button (optional, see above) |
+
+**Redeploy after changing any environment variable**; a running deployment does not pick up new values.
+Never add the Supabase service role key to Vercel.
 
 ## Things to decide with the RHU
 
@@ -112,3 +137,10 @@ Deploy to Vercel (import the repository, add the two `NEXT_PUBLIC_` variables). 
 - The model compares favourably or unfavourably with the simple baseline depending on the data; report what you
   actually find. It should improve as more months are added.
 - Validation is time-ordered (train on earlier months, test on the next one), never a random split.
+- Weather is gridded reanalysis data (Open-Meteo), not a weather station, and may differ from local rainfall.
+- Only municipality-level monthly totals are used, so the system cannot show which barangay is affected.
+- The forecast looks one month ahead only.
+- The risk score is a model score, not a calibrated probability.
+- "Main factors" are feature importances of the model. They show what the model used, not what caused the cases.
+- The cut-offs (mean + 1.0 SD for "elevated"; 0.3 moderate, 0.6 high) were tuned on synthetic data and must be
+  validated with the RHU's real data.
