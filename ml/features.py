@@ -26,10 +26,24 @@ FEATURE_LABELS = {
 }
 
 
+def check_no_missing_months(df: pd.DataFrame) -> None:
+    """Stop if the case series skips a month.
+
+    Lags and thresholds are computed by row position, so a skipped month would silently
+    pair a month with the wrong "previous month" and give wrong results without any error.
+    """
+    n = df["year"].astype(int) * 12 + df["month"].astype(int) - 1  # month number since year 0
+    present = set(n)
+    for m in range(int(n.min()), int(n.max()) + 1):
+        if m not in present:
+            raise SystemExit(f"Missing month: {m // 12}-{m % 12 + 1:02d}. Add it before running.")
+
+
 def build_frame(cases: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
     """Merge cases + weather, sort by time, append one empty row for the next month."""
     df = cases.merge(weather, on=["year", "month"], how="left").sort_values(["year", "month"])
     df = df.reset_index(drop=True)
+    check_no_missing_months(df)
     last = df.iloc[-1]
     ny, nm = (int(last.year) + 1, 1) if int(last.month) == 12 else (int(last.year), int(last.month) + 1)
     nxt = {c: np.nan for c in df.columns}
