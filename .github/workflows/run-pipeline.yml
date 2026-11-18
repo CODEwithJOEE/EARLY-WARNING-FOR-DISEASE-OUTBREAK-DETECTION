@@ -20,13 +20,13 @@ jobs:
           cache: pip
           cache-dependency-path: ml/requirements.txt
       - run: pip install -r ml/requirements.txt
-      - name: Update weather (last 24 months)
+      - name: Update weather (from 2023-01 to last month)
         working-directory: ml
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        # Only complete months: from 24 months ago to the last day of the previous month.
-        run: python weather.py "$(date -d '24 months ago' +%Y-%m-01)" "$(date -d "$(date +%Y-%m-01) -1 day" +%Y-%m-%d)"
+        # Only complete months: from 2023-01-01 (start of the RHU data requested) to the last day of the previous month.
+        run: python weather.py 2023-01-01 "$(date -d "$(date +%Y-%m-01) -1 day" +%Y-%m-%d)"
       - name: Run pipeline
         working-directory: ml
         env:

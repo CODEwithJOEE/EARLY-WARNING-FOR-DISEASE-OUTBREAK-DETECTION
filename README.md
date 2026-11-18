@@ -62,8 +62,8 @@ Refresh the dashboard to see it.
    This also removes any test weather rows (source `test` or `synthetic-demo`).
 2. Enter the RHU's monthly counts in the app (Monthly cases page) or import a CSV with the columns
    `year,month,cough,fever,diarrhea`. Every month must be present, with no gaps.
-3. Fetch weather for the same months (needs internet): `python weather.py 2025-01-01 2026-10-31`
-   (the workflow also does this automatically). The weather comes from Open-Meteo, which is **gridded reanalysis data,
+3. Fetch weather for the same months (needs internet), from the first month of your case data to the last:
+   `python weather.py 2023-01-01 2026-10-31` (the daily workflow keeps it up to date from 2023-01-01). The weather comes from Open-Meteo, which is **gridded reanalysis data,
    not a weather station**. Coordinates are in `weather.py` (Katipunan town center, 8.5128 N, 123.2847 E);
    check them against a map, and compare the monthly rainfall with any local records the RHU or the LGU has.
 4. Run `python pipeline.py`, or press **Run prediction** on the dashboard.
@@ -85,7 +85,6 @@ Safeguards:
 - The dashboard shows a **Data is behind** banner when the latest month entered is older than the previous calendar month.
 - The pipeline stops with `Missing month: YYYY-MM. Add it before running.` if the case series skips a month
   (a gap would silently misalign the lag features).
-- `weather.py` prints a warning when a month has weather for fewer days than it has.
 
 Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` under Settings → Secrets and variables → Actions.
 
@@ -131,9 +130,11 @@ Never add the Supabase service role key to Vercel.
 
 ## Known limits (state these in the thesis)
 
-- Roughly 22 months of municipality-level data is very small. The held-out test period is ~10 months with
-  very few elevated months, so accuracy, precision, recall and F1 are unstable.
-- With under two full years, the model cannot learn a reliable yearly pattern.
+- The demo data is synthetic (22 months). Never report numbers from it. Report only results from a run on the
+  RHU's real data.
+- Even with the 46 months requested from the RHU (Jan 2023 to Oct 2026), this is one municipality's monthly totals,
+  so the test period is short and has few elevated months. Accuracy, precision, recall and F1 can still be unstable.
+- If the RHU can give less than two full years, the model cannot learn a reliable yearly pattern.
 - The model compares favourably or unfavourably with the simple baseline depending on the data; report what you
   actually find. It should improve as more months are added.
 - Validation is time-ordered (train on earlier months, test on the next one), never a random split.
