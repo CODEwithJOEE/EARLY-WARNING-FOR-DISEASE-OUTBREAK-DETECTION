@@ -208,6 +208,15 @@ def load_inputs(force_csv: bool):
     return cases, weather, src
 
 
+def check_no_missing_months(cases: pd.DataFrame) -> None:
+    """Stop if the case series skips a month (lags are row-based, so a gap would misalign them)."""
+    periods = sorted({pd.Period(year=int(y), month=int(m), freq="M") for y, m in zip(cases["year"], cases["month"])})
+    for a, b in zip(periods, periods[1:]):
+        if b != a + 1:
+            missing = a + 1
+            raise SystemExit(f"Missing month: {missing.year}-{missing.month:02d}. Add it before running.")
+
+
 def write_supabase(result: dict) -> None:
     pred_rows, metric_rows = [], []
     for d in result["diseases"]:
@@ -249,6 +258,7 @@ def main() -> None:
     args = ap.parse_args()
 
     cases, weather, src = load_inputs(args.csv)
+    check_no_missing_months(cases)
     df = build_frame(cases, weather)
     if df[["rainfall_mm", "temperature_c", "humidity_pct"]].iloc[:-1].isna().any().any():
         raise SystemExit("Missing weather for some case months. Run weather.py first.")

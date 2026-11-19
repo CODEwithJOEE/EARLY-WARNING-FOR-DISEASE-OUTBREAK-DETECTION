@@ -5,6 +5,7 @@ Writes data/monthly_weather.csv (and upserts to Supabase if configured).
 
 NOTE: verify the coordinates with the RHU / a map before using real results.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,30 @@ import requests
 # Checked on a map: the point is on land in the poblacion, not offshore.
 LAT, LON = 8.5128, 123.2847
 URL = "https://archive-api.open-meteo.com/v1/archive"
+
+
+def monthly_from_daily(d: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Aggregate daily weather to months. Also report months with missing days.
+
+    The weather source can lag by a few days, so the last days of a month fetched right after it
+    ends may be empty. A month with missing days gets an under-counted rainfall total.
+    """
+    d = d.copy()
+    d["time"] = pd.to_datetime(d["time"])
+    d["year"], d["month"] = d["time"].dt.year, d["time"].dt.month
+    out = d.groupby(["year", "month"]).agg(
+        rainfall_mm=("precipitation_sum", "sum"),
+        temperature_c=("temperature_2m_mean", "mean"),
+        humidity_pct=("relative_humidity_2m_mean", "mean"),
+    )
+    days_with_data = d.dropna(subset=["precipitation_sum"]).groupby(["year", "month"]).size()
+    warnings = []
+    for (y, m), _ in out.iterrows():
+        have = int(days_with_data.get((y, m), 0))
+        expected = pd.Period(f"{y}-{m:02d}").days_in_month
+        if have < expected:
+            warnings.append(f"{y}-{m:02d} has weather for only {have} of {expected} days; its rainfall total may be too low.")
+    return out.round(1).reset_index(), warnings
 
 
 def fetch_monthly(start: str, end: str) -> pd.DataFrame:
@@ -31,20 +56,14 @@ def fetch_monthly(start: str, end: str) -> pd.DataFrame:
         timeout=60,
     )
     r.raise_for_status()
-    d = pd.DataFrame(r.json()["daily"])
-    d["time"] = pd.to_datetime(d["time"])
-    d["year"], d["month"] = d["time"].dt.year, d["time"].dt.month
-    out = d.groupby(["year", "month"]).agg(
-        rainfall_mm=("precipitation_sum", "sum"),
-        temperature_c=("temperature_2m_mean", "mean"),
-        humidity_pct=("relative_humidity_2m_mean", "mean"),
-    )
-    return out.round(1).reset_index()
+    out, warnings = monthly_from_daily(pd.DataFrame(r.json()["daily"]))
+    prefix = "::warning::" if os.getenv("GITHUB_ACTIONS") else "WARNING: "
+    for w in warnings:
+        print(prefix + w)
+    return out
 
 
 if __name__ == "__main__":
-    import os
-
     import db
     from dotenv import load_dotenv
 
